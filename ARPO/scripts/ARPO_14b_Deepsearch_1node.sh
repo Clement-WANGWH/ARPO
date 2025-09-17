@@ -1,12 +1,11 @@
-
-# 切换到脚本所在目录
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-cd "$SCRIPT_DIR"
-echo "已切换到目录: $SCRIPT_DIR"
+PARENT_DIR="$(dirname "$SCRIPT_DIR")"
+cd "$PARENT_DIR"
+echo "Switched to parent directory: $PARENT_DIR"
 
 
-# ============================ 环境设置 ============================
-# 设置基础环境变量
+# ============================ Environment Setup ============================
+# Set basic environment variables
 export PYTHONUNBUFFERED=1            
 export HYDRA_FULL_ERROR=1           
 export VLLM_ATTENTION_BACKEND=XFORMERS 
@@ -16,95 +15,90 @@ export MKL_THREADING_LAYER=GNU
 export RAY_memory_usage_threshold=0.8  
 export RAY_memory_monitor_refresh_ms=0 
 
-# 设置代理
-export http_proxy=http://oversea-squid2.ko.txyun:11080 
-export https_proxy=http://oversea-squid2.ko.txyun:11080 
-export no_proxy=localhost,127.0.0.1,localaddress,localdomain.com,internal,corp.kuaishou.com,test.gifshow.com,staging.kuaishou.com
+# Set Python path
+export PYTHONPATH="<your_path_to_ARPO>"/verl_arpo_entropy:$PYTHONPATH
 
-# 设置Python路径
-export PYTHONPATH=<your_path_to_ARPO>/verl_arpo_entropy:$PYTHONPATH
-
-# ============================ 基础配置 ============================
-# 实验名称与项目
+# ============================ Basic Configuration ============================
+# Experiment name and project
 PROJECT_NAME="deep_research"
 EXPERIMENT_NAME="qwen3_sft5.4w_global_16_init_8_beam_2_random_0.5_14B"
 
-# 配置文件路径
-CONFIG_PATH="<your_path_to_ARPO>/scripts/config" #config文件夹的绝对路径修改,相对路径不太可以
+# Configuration file path
+CONFIG_PATH="<your_path_to_ARPO>/scripts/config" # Modify the absolute path of the config folder, relative path is not recommended
 CONFIG_NAME="ppo_trainer_dr.yaml"
-# /mmu_nlp_ssd/makai05/DeepResearch/train_rl/config/ppo_trainer_dr.yaml
-# 分布式训练设置
+
+# Distributed training settings
 NNODES=1                            
 N_GPUS_PER_NODE=8                   
 
-# ============================ 数据配置 ============================
-# 数据参数
-PROMPT_KEY="prompt"                 # 提示词字段名
-TRAIN_BATCH_SIZE=64                # 训练批次大小
-PPO_MINI_BATCH_SIZE=8              # PPO小批次大小
-MAX_PROMPT_LENGTH=2000             # 最大提示长度
-MAX_RESPONSE_LENGTH=6192       # 最大响应长度
+# ============================ Data Configuration ============================
+# Data parameters
+PROMPT_KEY="prompt"                # Prompt field name
+TRAIN_BATCH_SIZE=64                # Training batch size
+PPO_MINI_BATCH_SIZE=8              # PPO mini-batch size
+MAX_PROMPT_LENGTH=2000             # Maximum prompt length
+MAX_RESPONSE_LENGTH=6192           # Maximum response length
 
-# 数据文件路径
+# Data file paths
 TRAIN_FILES="<your_path_to_ARPO>/rl_datasets/hard_search_1k.parquet"
 VALID_FILES=["<your_path_to_ARPO>/rl_datasets/gaia_test.parquet","<your_path_to_ARPO>/rl_datasets/hle_test.parquet"]
 
-# ============================ 模型配置 ============================
-# Actor模型路径
+# ============================ Model Configuration ============================
+# Actor model path
 ACTOR_MODEL_PATH="<your_14B_model_path>"
-# ============================ Rollout配置 ==========================
-# Rollout设置
-ROLLOUT_NAME="vllm"                 # 使用vllm引擎
-ROLLOUT_MODE="sync_with_tool"       # 同步模式并支持工具调用
-ROLLOUT_N=12                         # 每个样本生成的响应数量
-INITIAL_ROLLOUTS=6                 # 初始rollout数量
-BEAM_SIZE=2                        # beam size
-BRANCH_PROBABILITY=0.5             # branch probability
+# ============================ Rollout Configuration ==========================
+# Rollout settings
+ROLLOUT_NAME="vllm"                 # Use vllm engine
+ROLLOUT_MODE="sync_with_tool"       # Synchronous mode with tool support
+ROLLOUT_N=12                         # Number of responses generated per sample
+INITIAL_ROLLOUTS=6                 # Initial rollout number
+BEAM_SIZE=2                        # Beam size
+BRANCH_PROBABILITY=0.5             # Branch probability
 Entropy_weight=0.2
-# ============================ Rollout Tools配置 ==========================
+# ============================ Rollout Tools Configuration ==========================
 SEARCH_CACHE_PATH="<your_path_to_ARPO>/search_cache/search_cache.json" # Modify
 
-# ============================ 奖励模型配置 ==========================
-# 奖励模型设置
-REWARD_MANAGER="naive"              # 奖励管理器类型
+# ============================ Reward Model Configuration ==========================
+# Reward model settings
+REWARD_MANAGER="naive"              # Reward manager type
 CUSTOM_REWARD_FUNCTION_PATH="<your_path_to_ARPO>/verl_arpo_entropy/verl/utils/reward_score/deep_research.py"
 CUSTOM_REWARD_FUNCTION_NAME="compute_score"
 
-# ============================ 训练配置 ============================
-# 训练参数
-TOTAL_EPOCHS=5                      # 总训练轮次
-SAVE_FREQ=5                        # 保存频率
-TEST_FREQ=5                        # 测试频率
+# ============================ Training Configuration ============================
+# Training parameters
+TOTAL_EPOCHS=5                      # Total training epochs
+SAVE_FREQ=5                        # Save frequency
+TEST_FREQ=5                        # Test frequency
 
-# ============================ 路径配置 ============================
-# 保存路径
+# ============================ Path Configuration ============================
+# Save path
 SAVE_PATH="<your_checkpoint_save_dir>/rl/${EXPERIMENT_NAME}"
 ROLLOUT_SAVE_PATH="${SAVE_PATH}/rollout"
 
-# ============================ WandB配置 ============================
-# WandB设置
+# ============================ WandB Configuration ============================
+# WandB settings
 WANDB_API_KEY="<your_wandb_key>" # Modify your wandb key
 
-# ============================ 准备工作 ============================
-# 登录WandB（如果提供了API密钥）
+# ============================ Preparation ============================
+# Login to WandB (if API key is provided)
 if [ "$WANDB_API_KEY" != "" ]; then
     wandb login --relogin $WANDB_API_KEY
     export WANDB_DIR=${SAVE_PATH}
 fi
 
-# 创建保存目录
+# Create save directory
 if [ ! -d "$SAVE_PATH" ]; then
     mkdir -p $SAVE_PATH
 fi
 
-# 创建rollout保存目录
+# Create rollout save directory
 if [ ! -d "$ROLLOUT_SAVE_PATH" ]; then
     mkdir -p $ROLLOUT_SAVE_PATH
 fi
 
 
 
-# ============================ 启动训练 ============================
+# ============================ Start Training ============================
 python3 -m verl.trainer.main_ppo \
     --config-path=$CONFIG_PATH \
     --config-name=$CONFIG_NAME \
