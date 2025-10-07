@@ -121,11 +121,27 @@ def clip_by_value(x, tensor_min, tensor_max):
     return clipped
 
 
-def entropy_from_logits(logits: torch.Tensor):
-    """Calculate entropy from logits."""
-    pd = torch.nn.functional.softmax(logits, dim=-1)
-    entropy = torch.logsumexp(logits, dim=-1) - torch.sum(pd * logits, dim=-1)
-    return entropy
+def entropy_from_logits(logits: torch.Tensor) -> torch.Tensor:
+    """Compute the Shannon entropy for each categorical distribution described by ``logits``.
+
+    Args:
+        logits (torch.Tensor): Unnormalized log-probabilities of shape ``(..., num_classes)``.
+
+    Returns:
+        torch.Tensor: Entropy values with shape ``logits.shape[:-1]``.
+
+    Example:
+        >>> import torch
+        >>> from verl.utils.torch_functional import entropy_from_logits
+        >>> logits = torch.tensor([[0.0, 0.0]])
+        >>> entropy_from_logits(logits)
+        tensor([0.6931])
+
+    """
+
+    log_probs = torch.log_softmax(logits, dim=-1)
+    probs = log_probs.exp()
+    return -(probs * log_probs).sum(dim=-1)
 
 
 def masked_sum(values, mask, axis=None):
