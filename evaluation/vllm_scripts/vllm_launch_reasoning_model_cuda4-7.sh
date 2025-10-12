@@ -3,8 +3,9 @@
 use_qwen3=true
 
 # Activate the Conda environment
-source < /path/to/your/conda >/bin/activate
-conda activate < your env name >
+source /root/miniconda3/etc/profile.d/conda.sh
+#source /root/miniconda3/envs/vllm_env/bin/activate
+conda activate evaluation
 
 # Move to the script's directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
@@ -15,30 +16,19 @@ echo "cd $SCRIPT_DIR"
 mkdir -p logs
 
 # Model path - same model used for all instances
-MODEL_PATH="< path/to/your/checkpoints >"
-MODEL_NAME="Qwen2.5-7B-Instruct"
+MODEL_PATH="/root/autodl-tmp/Qwen2.5-7B-ARPO"
+MODEL_NAME="Qwen2.5-7B-ARPO"
 
-# Launch instance 3 - using GPU 4 and 5
-echo "Starting Instance 3 on GPU 4,5"
-CUDA_VISIBLE_DEVICES=4,5 nohup vllm serve $MODEL_PATH \
+# Launch instance 1 - using GPU 0
+echo "Starting Instance 1 on GPU 0"
+CUDA_VISIBLE_DEVICES=0 nohup vllm serve $MODEL_PATH \
     --served-model-name $MODEL_NAME \
     --max-model-len 32768 \
-    --tensor_parallel_size 2 \
-    --gpu-memory-utilization 0.75 \
-    --port 8002 > logs/model3.log 2>&1 &
-INSTANCE3_PID=$!
-echo "Instance 3 deployed on port 8002 using GPU 4,5"
-
-# Launch instance 4 - using GPU 6 and 7
-echo "Starting Instance 4 on GPU 6,7"
-CUDA_VISIBLE_DEVICES=6,7 nohup vllm serve $MODEL_PATH \
-    --served-model-name $MODEL_NAME \
-    --max-model-len 32768 \
-    --tensor_parallel_size 2 \
-    --gpu-memory-utilization 0.75 \
-    --port 8003 > logs/model4.log 2>&1 &
-INSTANCE4_PID=$!
-echo "Instance 4 deployed on port 8003 using GPU 6,7"
+    --tensor_parallel_size 1 \
+    --gpu-memory-utilization 0.9 \
+    --port 8002 > logs/model0.log 2>&1 &
+INSTANCE1_PID=$!
+echo "Instance 1 deployed on port 8002 using GPU 0"
 
 # Display all running model services
 echo "---------------------------------------"
@@ -47,5 +37,5 @@ ps aux | grep "vllm serve" | grep -v grep
 echo "---------------------------------------"
 
 # Handle cleanup on termination
-trap "kill $INSTANCE3_PID $INSTANCE4_PID" SIGTERM
-wait $INSTANCE3_PID $INSTANCE4_PID
+trap "kill $INSTANCE1_PID" SIGTERM
+wait $INSTANCE1_PID

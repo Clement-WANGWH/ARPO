@@ -1,3 +1,11 @@
 LLaMA-Factory/arpo_train_sft/dataset/*.jsonl
 LLaMA-Factory/arpo_train_sft/dataset/*.jsonl
 LLaMA-Factory/LLaMA-Factory-backup
+evaluation/vllm_scripts/logs
+evaluation/search_cache.db
+evaluation/search_url_cache.db
+
+# ignore all __pycache__ directories
+**/__pycache__/
+**/logs/
+**/.ipynb_checkpoints/
