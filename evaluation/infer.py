@@ -35,7 +35,7 @@ def parse_arguments():
                             help="Model path for tokenizer loading")
     vllm_group.add_argument("--api_keys", type=str, nargs='+', default=None,
                             help="List of API keys corresponding to endpoints")
-    vllm_group.add_argument("--default_model", type=str, default="Qwen2.5-7B-Instruct",
+    vllm_group.add_argument("--default_model", type=str, default="Qwen2.5-7B-ARPO",
                             help="Default model name to use")
     
     generation_group = parser.add_argument_group("Generation Parameters")
@@ -97,7 +97,7 @@ def parse_arguments():
                              help="Delay between Bing retries (in seconds)")
     tools_group.add_argument("--summ_model_urls", type=str, nargs='+', default=["http://localhost:8004/v1"],
                              help="Local summarization LLM API endpoints")
-    tools_group.add_argument("--summ_model_name", type=str, default="Qwen2.5-72B-Instruct",
+    tools_group.add_argument("--summ_model_name", type=str, default="Qwen3-8B",
                              help="Name of local summarization LLM")
     tools_group.add_argument("--summ_model_path", type=str,
                              help="Path to local summarization LLM for tokenizer")
