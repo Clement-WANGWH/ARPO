@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #================== Basic Configuration ==================#
-export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7  # List of visible GPUs
+export CUDA_VISIBLE_DEVICES=0,1  # List of visible GPUs
 export PYTHONPATH=$(pwd):$PYTHONPATH
 
 # Disable Weights & Biases
@@ -16,7 +16,7 @@ MASTER_ADDR="127.0.0.1"  # Address of the master node
 MASTER_PORT=29500        # Port of the master node
 
 # Output directory
-OUTPUT_DIR="<your_output_dir>"
+OUTPUT_DIR="/root/autodl-tmp/checkpoint/Qwen2.5-7B-Instruct"
 # Create output directory if it doesn't exist
 mkdir -p ${OUTPUT_DIR}
 
@@ -32,8 +32,7 @@ torchrun --nnodes ${NNODES} \
          --nproc_per_node ${PROC_PER_NODE} \
          --master_addr ${MASTER_ADDR} \
          --master_port ${MASTER_PORT} \
-         ${TRAIN_SCRIPT} \
-         ${TRAIN_ARGS} 2>&1 | tee ${OUTPUT_DIR}/training.log
+         sh -c 'CUDA_VISIBLE_DEVICES=$LOCAL_RANK ${TRAIN_SCRIPT} ${TRAIN_ARGS}' 2>&1 | tee ${OUTPUT_DIR}/training.log
 
 # Optionally enable logging redirection
 # exec >> ${OUTPUT_DIR}/training.log 2>&1
