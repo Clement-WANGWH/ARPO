@@ -14,6 +14,7 @@ from .tools.tool_executor import ToolExecutor
 from .tools import PythonTool, BingSearchTool, BingSearchToolSDS
 from .vllm_client_pool import VLLMClientPool
 from .sample_processor import SampleProcessor, SampleProcessorCompletion
+from .entropy_utils import save_sample_artifacts
 
 
 class AsyncInference:
@@ -43,6 +44,7 @@ class AsyncInference:
             repetition_penalty=args.repetition_penalty,
             n=1,
             include_stop_str_in_output=args.include_stop_str_in_output,
+            logprobs=getattr(args, "entropy_top_k", 5),
         )
         self.args.sampling_params_nostop = SamplingParams(
             temperature=args.temperature,
@@ -54,6 +56,7 @@ class AsyncInference:
             n=1,
             include_stop_str_in_output=args.include_stop_str_in_output,
             stop=None,
+            logprobs=getattr(args, "entropy_top_k", 5),
         )
         self.sample_timeout = getattr(args, "sample_timeout", 240)
         print(f"Initialized {self.__class__.__name__}...")
@@ -234,6 +237,7 @@ class AsyncInference:
                 print(
                     f"Processed {dataset_name} (Turn {turn}), save results to {output_file}"
                 )
+                self._save_turn_artifacts(dataset_name, turn, results)
         print("Finished to process all datasets!")
 
 
@@ -250,6 +254,20 @@ class AsyncInferenceCompletion(AsyncInference):
             session_id,
         )
         return processor
+
+    def _save_turn_artifacts(self, dataset_name: str, turn: int, results):
+        if not self.args.output_path:
+            return
+        turn_dir = os.path.join(
+            self.args.output_path,
+            dataset_name,
+            f"turn_{turn}_samples",
+        )
+        for idx, sample in enumerate(results):
+            if not sample:
+                continue
+            sample_dir = os.path.join(turn_dir, f"sample_{idx:04d}")
+            save_sample_artifacts(sample, sample_dir, idx)
 
 
 class AsyncInferenceCompletionSDS(AsyncInferenceCompletion):
