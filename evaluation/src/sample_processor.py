@@ -1,6 +1,11 @@
 import time
 import hashlib
 from .utils import extract_answer
+from .entropy_utils import (
+    aggregate_token_records,
+    extract_token_stats_from_choice,
+    trim_token_stats_to_match_text,
+)
 
 
 class SampleProcessor:
@@ -36,6 +41,7 @@ class SampleProcessor:
         self.python_rounds = 0
         self.search_rounds = 0
         self.in_context = ""
+        self.token_records = []
         self.messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": question},
@@ -71,7 +77,9 @@ class SampleProcessor:
             if not result:
                 print("The LLM fails to generate output!\n")
                 return 'None' if not all_output else all_output
-            output = result.choices[0].text
+            choice = result.choices[0]
+            token_stats = extract_token_stats_from_choice(choice)
+            output = choice.text
             output = output.split("<result>")[0]
             if "</search>" in output:
                 output = output.split("</search>")[0] + "</search>"
@@ -79,6 +87,8 @@ class SampleProcessor:
                 output = output.split("</python>")[0] + "</python>"
             if "</answer>" in output:
                 output = output.split("</answer>")[0] + "</answer>"
+            trimmed_stats = trim_token_stats_to_match_text(token_stats, output)
+            self._record_token_stats(trimmed_stats)
             all_output += output
             if (
                 "</search>" not in all_output
@@ -154,6 +164,7 @@ class SampleProcessor:
 
         self.sample_stat["prediction"] = extract_answer(self.sample_stat["output"])
         self.total_time = time.time() - self.sample_start_time
+        self._finalize_token_trace()
 
     def log_timing(self):
         print(f"Time consumption for question: {self.question[:30]}...")
@@ -167,6 +178,16 @@ class SampleProcessor:
             "search_time": self.search_time,
             "total_time": self.total_time,
         }
+
+    def _record_token_stats(self, record):
+        if not record:
+            return
+        self.token_records.append(record)
+
+    def _finalize_token_trace(self):
+        token_trace = aggregate_token_records(self.token_records)
+        if token_trace:
+            self.sample_stat["token_trace"] = token_trace
 
 
 class SampleProcessorCompletion(SampleProcessor):
@@ -223,3 +244,4 @@ class SampleProcessorCompletion(SampleProcessor):
                 break
         self.sample_stat["prediction"] = extract_answer(self.sample_stat["output"])
         self.total_time = time.time() - self.sample_start_time
+        self._finalize_token_trace()
