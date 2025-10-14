@@ -4,6 +4,8 @@ LLaMA-Factory/LLaMA-Factory-backup
 evaluation/vllm_scripts/logs
 evaluation/search_cache.db
 evaluation/search_url_cache.db
+LLaMA-Factory/arpo_train_sft/autodl-tmp
+LLaMA-Factory/analyze_length.py
 
 # ignore all __pycache__ directories
 **/__pycache__/
