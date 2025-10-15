@@ -3,7 +3,7 @@
 # Activate the Conda environment
 source /root/miniconda3/etc/profile.d/conda.sh
 #source /root/miniconda3/envs/evaluation/bin/activate
-conda activate evaluation
+conda activate sft
 
 # Switch to the script's directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
@@ -33,21 +33,22 @@ DATASET_NAME=$(echo "${data_names[@]}" | tr '\n' ' ')
 # Reasoning model endpoints
 infer_endpoints=(
     "http://localhost:8002/v1"
+    "http://localhost:8003/v1"
 )  
 ENDPOINTS=$(echo "${infer_endpoints[@]}" | tr '\n' ' ')
 
 SAMPLE_TIMEOUT=1500  # Timeout for one sample
 
 EXP_NAME="MathReasoning"
-MODEL_PATH="root/autodl-tmp/Qwen2.5-7B-ARPO"
-OUTPUT_PATH="root/autodl-tmp/output"
+MODEL_PATH="/root/autodl-tmp/Qwen2.5-7B-Instruct-sft"  # Model path
+OUTPUT_PATH="/root/autodl-tmp/output"
 DATA_PATH="data"                       
-TURNS="1 2 3 4 5"  # Inference turns
+TURNS="1 2 3"  # Inference turns
 
 with_tools=true
 if [ "$with_tools" = true ]; then
     PROMPT_TYPE="code_search"          # Prompt type (code_search, search, math, base)
-    MAX_PYTHON_TIMES=5                 # Max Python tool invocation times
+    MAX_PYTHON_TIMES=10                 # Max Python tool invocation times
     MAX_SEARCH_TIMES=10                # Max search tool invocation times
 else
     PROMPT_TYPE="base"                 # Prompt type (code_search, search, math, base)
@@ -62,7 +63,7 @@ INFER_MODE=completion_sds   # `completion_sds` (with web browser), 'default' (wi
 # VLLM config
 echo "Inference endpoints: $ENDPOINTS"
 API_KEYS=""                     # API keys list, corresponds to endpoints; empty means default "EMPTY"
-DEFAULT_MODEL="Qwen2.5-7B-Instruct"  # Default model name
+DEFAULT_MODEL="Qwen2.5-7B-Instruct-sft"  # Default model name
 
 # Generation parameters
 TEMPERATURE=0.6                      # Temperature parameter
@@ -81,7 +82,7 @@ COUNTS=500                        # Number of samples to process
 
 # Tool configurations
 CONDA_PATH="/root/miniconda3/"   # Conda installation path
-CONDA_ENV="evaluation"     # Conda environment name
+CONDA_ENV="sft"     # Conda environment name
 PYTHON_MAX_CONCURRENT=32                        # Max concurrent Python executor
 BING_API_KEY="4c195004625df982f95ed787ca9d62949c5eb7cc6a77b02995fb32e84efc298d"  # Bing Search API key
 BING_ZONE="serp_api_bing"                        # Bing search zone
@@ -94,7 +95,7 @@ BING_RETRY_DELAY=1.0                            # Bing search retry delay (secon
 # Simple deep search config
 SUMM_MODEL_URLS="http://localhost:8004/v1"
 SUMM_MODEL_NAME="Qwen3-8B"
-SUMM_MODEL_PATH="root/autodl-tmp/Qwen3-8B"
+SUMM_MODEL_PATH="/root/autodl-tmp/Qwen3-8B"
 SEARCH_CACHE_FILE="search_cache.db"
 URL_CACHE_FILE="search_url_cache.db"
 

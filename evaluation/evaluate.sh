@@ -11,7 +11,7 @@ export PYTHONPATH=$(pwd):$PYTHONPATH
 # Evaluation configuration parameters
 USE_LLM=true                               # Whether to use LLM for equivalence evaluation
 API_BASE_URL="http://localhost:8001/v1"   # Base URL of the LLM API
-MODEL_NAME="Qwen2.5-72B-Instruct"         # Name of the LLM evaluation model
+MODEL_NAME="Qwen3-8B"         # Name of the LLM evaluation model
 CONCURRENT_LIMIT=50                        # Limit of concurrent evaluations
 TIMEOUT=3600                              # Total evaluation timeout (seconds)
 

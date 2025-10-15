@@ -32,7 +32,7 @@ class AsyncInference:
             args.model_path, trust_remote_code=True
         )
         self.data_loaders = [
-            DataLoader(dataset_name, args.dataset_path)
+            DataLoader(dataset_name, args.data_path)
             for dataset_name in args.dataset_name
         ]
         self.args.sampling_params = SamplingParams(
