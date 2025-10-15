@@ -2,19 +2,19 @@ import ast
 import subprocess
 from typing import Tuple
 
-from verl.workers.rollout.tools.base_tool import BaseTool
+from verl.workers.agent.tools.base_tool import BaseTool
 
 
 class PythonTool(BaseTool):
-    """Python代码执行工具，使用本地conda环境"""
+    """Python code execution tool, using local conda environment"""
     
     def __init__(self, conda_path: str, conda_env: str):
         """
-        初始化Python工具
+        Initialize Python tool
         
         Args:
-            conda_path: conda安装路径
-            conda_env: conda环境名称
+            conda_path: conda installation path
+            conda_env: conda environment name
         """
         self.conda_path = conda_path
         self.conda_env = conda_env
@@ -29,7 +29,7 @@ class PythonTool(BaseTool):
         return "python"
     
     def execute(self, code: str, timeout: int = 120) -> str:
-        """执行Python代码并返回结果"""
+        """Execute Python code and return result"""
         result, report = self._run_code(code, timeout)
         
         if report == "Done":
@@ -38,12 +38,12 @@ class PythonTool(BaseTool):
             return report
     
     def _run_code(self, code: str, timeout: int) -> Tuple[str, str]:
-        """在conda环境中运行Python代码并返回结果和状态"""
+        """Run Python code in conda environment and return result and status"""
         # 处理交互式代码
         code = self._preprocess_code(code)
         
         try:
-            # 使用 subprocess.run 同步执行命令
+            # Use subprocess.run to execute the command synchronously
             process = subprocess.run(
                 [self.python_path, '-c', code],
                 capture_output=True,
@@ -58,21 +58,21 @@ class PythonTool(BaseTool):
                 return "", process.stderr.strip()
 
         except subprocess.TimeoutExpired:
-            return "", f"执行超时（超过 {timeout} 秒）"
+            return "", f"Execution timeout (超过 {timeout} 秒）"
         except Exception as e:
-            return "", f"执行异常: {str(e)}"
+            return "", f"Execution exception: {str(e)}"
     
     def _preprocess_code(self, code: str) -> str:
         """
-        预处理Python代码，处理交互式代码
-        将最后一个表达式转换为print语句（如果不是print）
+        Preprocess Python code, process interactive code
+        Convert the last expression to a print statement (if not print)
         """
         try:
             tree = ast.parse(code)
             if tree.body:
                 last_expr = tree.body[-1]
                 if isinstance(last_expr, ast.Expr):
-                    # 仅当最后一个表达式不是print调用时才转换
+                    # Only convert when the last expression is not a print call
                     if not (isinstance(last_expr.value, ast.Call) 
                             and isinstance(last_expr.value.func, ast.Name) 
                             and last_expr.value.func.id == 'print'):
@@ -86,27 +86,27 @@ class PythonTool(BaseTool):
                         tree.body[-1] = print_call
                         code = ast.unparse(tree)
         except:
-            pass  # 保持原代码不变
+            pass  # Keep the original code unchanged
         
         return code
 
 def _test():
     batch_code = [
         """
-# 创建符号变量
+# Create symbolic variables
 x = sympy.symbols('x')
 y = sympy.symbols('y')
 
-# 创建一个表达式
+# Create an expression
 expr = x**2 + 2*x*y + y**2
 
 print(f"Expression: {expr}")
 
-# 求导
+# Derivative
 derivative = sympy.diff(expr, x)
 print(f"Derivative with respect to x: {derivative}")
 
-# 代入具体值
+# Substitute specific values
 result = expr.subs([(x, 1), (y, 2)])
 print(f"Value at x=1, y=2: {result}")
         """,
@@ -124,20 +124,20 @@ print(f"Value at x=1, y=2: {result}")
     ]
     
     async def run_test():
-        # 创建Python工具实例
+        # Create Python tool instance
         python_tool = PythonTool(
-            conda_path="/mmu_nlp_ssd/makai05/miniconda3/",  # 请根据实际conda安装路径修改
-            conda_env="verl",              # 请根据实际环境名称修改
+            conda_path="<your_conda_path>",  # Please modify according to the actual conda installation path
+            conda_env="verl",              # Please modify according to the actual environment name
             max_concurrent=64
         )
         
-        # 执行每个代码片段
+        # Execute each code snippet
         for i, code in enumerate(batch_code):
-            print(f"\n--- 执行代码片段 {i+1} ---")
+            print(f"\n--- execute code snippet {i+1} ---")
             result = await python_tool.execute(code)
-            print(f"结果:\n{result}")
+            print(f"Result:\n{result}")
     
-    # 运行测试
+    # Run test
     asyncio.run(run_test())
 
 if __name__ == "__main__":
