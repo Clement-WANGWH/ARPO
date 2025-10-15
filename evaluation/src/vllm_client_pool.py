@@ -58,6 +58,7 @@ class VLLMClientPool:
             "stop": sampling_params.stop,
             "repetition_penalty": sampling_params.repetition_penalty,
             "include_stop_str_in_output": sampling_params.include_stop_str_in_output,
+            "logprobs": getattr(sampling_params, "logprobs", None),
         }
         client = await self.get_client_for_session(session_id)
         for attempt in range(3): 
@@ -69,6 +70,7 @@ class VLLMClientPool:
                     top_p=params.get("top_p", 0.7),
                     max_tokens=params.get("max_tokens", 8192),
                     stop=params.get("stop", ["</python>", "</search>", "</answer>"]),
+                    logprobs=params.get("logprobs"),
                     extra_body={
                         "repetition_penalty": params.get("repetition_penalty", 1.05),
                         "include_stop_str_in_output": params.get("include_stop_str_in_output", True),
@@ -102,6 +104,7 @@ class VLLMClientPool:
                     top_p=params.get("top_p", 0.7),
                     max_tokens=params.get("max_tokens", 8192),
                     stop=params.get("stop", ["</python>", "</search>", "</answer>"]),
+                    logprobs=params.get("logprobs"),
                     extra_body={
                         "repetition_penalty": params.get("repetition_penalty", 1.05),
                         "include_stop_str_in_output": params.get("include_stop_str_in_output", True),

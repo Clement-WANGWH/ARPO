@@ -53,6 +53,8 @@ def parse_arguments():
                                   help="Repetition penalty factor")
     generation_group.add_argument("--include_stop_str_in_output", type=bool, default=True,
                                   help="Whether to include stop strings in output")
+    generation_group.add_argument("--entropy_top_k", type=int, default=5,
+                                  help="Number of top token log-probabilities used to estimate entropy")
 
     inference_group = parser.add_argument_group("Inference Configuration")
     inference_group.add_argument("--max_concurrent_requests", type=int, default=50,
