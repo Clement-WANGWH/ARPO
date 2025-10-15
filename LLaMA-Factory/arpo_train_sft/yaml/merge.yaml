@@ -1,0 +1,15 @@
+# 基于 LLaMAFactory 的导出配置（LoRA/QLoRA 合并为完整权重）
+model_name_or_path: "/root/autodl-tmp/Qwen2.5-7B-Instruct"        
+adapter_name_or_path: "/root/autodl-tmp/checkpoint/Qwen2.5-7B-Instruct"
+
+# 针对 Qwen 使用的聊天模板
+template: qwen
+
+# 指定微调类型
+finetuning_type: lora
+
+# 导出目录
+export_dir: "/root/autodl-tmp/merged/Qwen2.5-7B-Instruct-sft"
+
+# 是否用旧版保存格式
+export_legacy_format: false
