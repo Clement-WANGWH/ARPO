@@ -6,6 +6,7 @@ evaluation/search_cache.db
 evaluation/search_url_cache.db
 LLaMA-Factory/arpo_train_sft/autodl-tmp
 LLaMA-Factory/analyze_length.py
+evaluation/nohup.out
 
 # ignore all __pycache__ directories
 **/__pycache__/

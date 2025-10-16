@@ -17,8 +17,7 @@ declare -A task_map=(
     ["xbench"]="qa"
 )
 
-OUTPUT_DIR="your_result_directory"
-
+OUTPUT_DIR="/root/autodl-tmp/output"
 
 find "$OUTPUT_DIR" -type f -name '*_output_*.json' | while read -r file_path; do
     filename=$(basename "$file_path")
