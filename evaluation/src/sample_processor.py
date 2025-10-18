@@ -88,6 +88,28 @@ class SampleProcessor:
             if "</answer>" in output:
                 output = output.split("</answer>")[0] + "</answer>"
             trimmed_stats = trim_token_stats_to_match_text(token_stats, output)
+            # Lightweight diagnostics to help trace entropy pipeline issues
+            try:
+                ts_len = len(token_stats.get("tokens", []) or [])
+                te_len = len(token_stats.get("entropies", []) or [])
+                tt_len = len(token_stats.get("top_logprobs", []) or [])
+                tz_len = len([e for e in (token_stats.get("entropies", []) or []) if e is not None])
+                tr_t_len = len(trimmed_stats.get("tokens", []) or [])
+                tr_e_len = len(trimmed_stats.get("entropies", []) or [])
+                tr_nz_len = len([e for e in (trimmed_stats.get("entropies", []) or []) if e is not None])
+                print(
+                    f"[entropy] parsed tokens={ts_len}, entropies={te_len} (non-null={tz_len}), top_logprobs={tt_len}; "
+                    f"after trim tokens={tr_t_len}, entropies={tr_e_len} (non-null={tr_nz_len})"
+                )
+                if ts_len > 0 and tr_t_len == 0:
+                    # Show a tiny snippet to help diagnose mismatch
+                    show_text = output.replace("\n", "\\n")[:120]
+                    first_tok = token_stats.get("tokens", [""])[0]
+                    print(
+                        f"[entropy][warn] tokens parsed but trimmed to zero. First token='{first_tok}', target_text_snippet='{show_text}'"
+                    )
+            except Exception:
+                pass
             self._record_token_stats(trimmed_stats)
             all_output += output
             if (

@@ -73,6 +73,16 @@ def extract_token_stats_from_choice(choice: Any) -> Dict[str, Any]:
     }
 
 
+def _normalize_for_match(s: str) -> str:
+    if not s:
+        return s
+    # Unify newlines and strip zero-width/BOM characters that often appear in decoding
+    s = s.replace("\r\n", "\n").replace("\r", "\n")
+    s = s.replace("\uFEFF", "").replace("\ufeff", "")  # BOM
+    s = s.replace("\u200b", "").replace("\u200c", "").replace("\u200d", "")  # ZW* chars
+    return s
+
+
 def trim_token_stats_to_match_text(
     record: Dict[str, Any], target_text: str
 ) -> Dict[str, Any]:
@@ -100,30 +110,49 @@ def trim_token_stats_to_match_text(
     trimmed_logprobs: List[Optional[float]] = []
     trimmed_top_logprobs: List[Dict[str, float]] = []
 
+    # First try: strict prefix alignment on normalized text
+    norm_target = _normalize_for_match(target_text)
     current_text = ""
-    for token, entropy, logprob, top in zip(
-        tokens, entropies, token_logprobs, top_logprobs
-    ):
+    success = False
+    for token, entropy, logprob, top in zip(tokens, entropies, token_logprobs, top_logprobs):
         candidate = current_text + token
-        if target_text and not target_text.startswith(candidate):
+        if norm_target and not _normalize_for_match(norm_target).startswith(_normalize_for_match(candidate)):
+            # stop at the first mismatch
             break
         trimmed_tokens.append(token)
         trimmed_entropies.append(entropy)
         trimmed_logprobs.append(logprob)
         trimmed_top_logprobs.append(top)
         current_text = candidate
-        if current_text == target_text:
+        if _normalize_for_match(current_text) == norm_target:
+            success = True
             break
 
-    if target_text and "".join(trimmed_tokens) != target_text:
-        return {
-            **record,
-            "tokens": [],
-            "entropies": [],
-            "token_logprobs": [],
-            "top_logprobs": [],
-            "text": target_text,
-        }
+    # Fallback 1: if nothing matched but we do have tokens, try length-based cutoff
+    if not success and not trimmed_tokens and tokens:
+        current_text = ""
+        for token, entropy, logprob, top in zip(tokens, entropies, token_logprobs, top_logprobs):
+            trimmed_tokens.append(token)
+            trimmed_entropies.append(entropy)
+            trimmed_logprobs.append(logprob)
+            trimmed_top_logprobs.append(top)
+            current_text += token
+            if len(_normalize_for_match(current_text)) >= len(norm_target):
+                success = True
+                break
+
+    # Final verification; if still not aligned, keep the original target_text but avoid dropping everything
+    if target_text and _normalize_for_match("".join(trimmed_tokens))[: len(norm_target)] != norm_target:
+        # Keep what we have if we matched at least one token, else fall back to empty to avoid misleading alignment
+        if not trimmed_tokens:
+            return {
+                **record,
+                "tokens": [],
+                "entropies": [],
+                "token_logprobs": [],
+                "top_logprobs": [],
+                "text": target_text,
+            }
 
     return {
         "tokens": trimmed_tokens,
