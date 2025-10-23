@@ -7,6 +7,7 @@ import json
 from typing import List, Tuple
 
 from .utils import extract_solution, last_boxed_only_string, remove_boxed
+from .filters import build_math500_level45
 
 
 class DataLoader:
@@ -19,7 +20,23 @@ class DataLoader:
             data_path
         """
         self.dataset_name = dataset_name
-        self.data_path = os.path.join(data_path, dataset_name, 'test.jsonl')
+        # Special handling for math500: build a filtered Level 4&5 subset from MATH if needed
+        if dataset_name == "math500":
+            target_dir = os.path.join(data_path, dataset_name)
+            os.makedirs(target_dir, exist_ok=True)
+            filtered_file = os.path.join(target_dir, "test_level45.jsonl")
+            if not os.path.exists(filtered_file):
+                # Source from standard MATH test set
+                source_file = os.path.join(data_path, "math", "test.jsonl")
+                if not os.path.exists(source_file):
+                    raise FileNotFoundError(
+                        f"math500 requires source MATH dataset at {source_file}"
+                    )
+                kept, total = build_math500_level45(source_file, filtered_file)
+                print(f"[math500] built Level 4&5 subset: kept {kept} / scanned {total} -> {filtered_file}")
+            self.data_path = filtered_file
+        else:
+            self.data_path = os.path.join(data_path, dataset_name, 'test.jsonl')
 
     def load_data(self) -> Tuple[List[str], List[str]]:
         """

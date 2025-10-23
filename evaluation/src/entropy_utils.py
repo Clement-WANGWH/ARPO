@@ -282,7 +282,11 @@ def save_entropy_plot(
     # Make x-axis more compact and cap overall width for readability
     fig_width = min(16, max(6, len(entropies) * 0.06))
     fig, ax = plt.subplots(figsize=(fig_width, 4.2))
-    ax.plot(xs, y_values, color="#1f77b4", linewidth=1.0)
+    # Draw per-token vertical bars (stick/bar style) and avoid skipping tokens
+    # Replace NaNs/None with 0 so every token is shown with a baseline bar
+    bar_heights = [0.0 if (v is None or math.isnan(v)) else float(v) for v in y_values]
+    # Use narrow bars with some spacing to keep readability for long sequences
+    ax.bar(xs, bar_heights, width=0.8, color="#1f77b4", edgecolor="#1f77b4", linewidth=0.5)
 
     colors = {
         "think": "#6baed6",
