@@ -17,7 +17,32 @@ from bs4 import BeautifulSoup
 from vllm import SamplingParams
 from urllib.parse import urlencode
 from transformers import AutoTokenizer
-from nltk.tokenize import sent_tokenize
+# Provide robust sentence tokenization without hard dependency on NLTK data files
+try:
+    import nltk  # type: ignore
+    from nltk.tokenize import sent_tokenize as _nltk_sent_tokenize  # type: ignore
+
+    def _safe_sent_tokenize(text: str):
+        try:
+            # Try current NLTK resource first
+            return _nltk_sent_tokenize(text)
+        except LookupError:
+            # Attempt silent downloads if network is available
+            for pkg in ("punkt_tab", "punkt"):
+                try:
+                    nltk.download(pkg, quiet=True)
+                    return _nltk_sent_tokenize(text)
+                except Exception:
+                    continue
+            # Fallback to regex split
+            import re
+            return [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()]
+except Exception:
+    # NLTK not available; use a simple regex-based splitter
+    import re
+
+    def _safe_sent_tokenize(text: str):
+        return [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()]
 from tqdm.asyncio import tqdm as async_tqdm
 from concurrent.futures import ThreadPoolExecutor
 
@@ -360,7 +385,7 @@ def extract_snippet_with_context(
         best_sentence = None
         best_f1 = 0.2
 
-        sentences = sent_tokenize(full_text)
+        sentences = _safe_sent_tokenize(full_text)
 
         for sentence in sentences:
             key_sentence = sentence.lower()
