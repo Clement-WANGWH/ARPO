@@ -86,9 +86,11 @@ class PreprocessCacheManager(BaseCacheManager):
         if obj is None:
             return
         processed_query = self.preprocess(query)
+        # Be robust to missing fields from upstream responses
+        # Only keep compact, useful parts for caching
         new_obj = {
-            "general": obj["general"],
-            "organic": obj["organic"],
+            "general": obj.get("general", {}),
+            "organic": obj.get("organic", []),
         }
         json_obj = json.dumps(new_obj, ensure_ascii=False)
         async with self.async_lock:
@@ -97,7 +99,7 @@ class PreprocessCacheManager(BaseCacheManager):
                 cursor.execute(
                     """
                     INSERT OR REPLACE INTO cache (key, obj, timestamp, valid)
-                    VALUES (?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?)
                 """,
                     (processed_query, json_obj, time.time(), 1),
                 )
