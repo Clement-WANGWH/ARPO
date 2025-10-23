@@ -3,8 +3,6 @@ import os
 sys.path.append(os.getcwd())
 import asyncio
 import argparse
-import nltk
-nltk.download('punkt')
 
 infer_mode_help = """Inference mode selection
 [default]       :    Basic behavior similar to the original search tool, uses summarization and continuously appends to the assistant content.

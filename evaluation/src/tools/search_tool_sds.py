@@ -23,20 +23,32 @@ try:
     from nltk.tokenize import sent_tokenize as _nltk_sent_tokenize  # type: ignore
 
     def _safe_sent_tokenize(text: str):
+        # 1) Try the default NLTK tokenizer (works if punkt/punkt_tab is already available)
         try:
-            # Try current NLTK resource first
             return _nltk_sent_tokenize(text)
         except LookupError:
-            # Attempt silent downloads if network is available
-            for pkg in ("punkt_tab", "punkt"):
+            pass
+
+        # 2) Try loading legacy punkt models from a local nltk_data dir (no network)
+        try:
+            import nltk.data  # type: ignore
+            import os as _os
+            for local_dir in ("/root/nltk_data", _os.path.expanduser("~/nltk_data")):
+                if _os.path.isdir(local_dir) and local_dir not in nltk.data.path:
+                    nltk.data.path.insert(0, local_dir)
+            # Prefer English; fall back to universal if present
+            for res in ("tokenizers/punkt/english.pickle", "tokenizers/punkt/PY3/english.pickle"):
                 try:
-                    nltk.download(pkg, quiet=True)
-                    return _nltk_sent_tokenize(text)
+                    tokenizer = nltk.data.load(res)  # type: ignore
+                    return tokenizer.tokenize(text)
                 except Exception:
                     continue
-            # Fallback to regex split
-            import re
-            return [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()]
+        except Exception:
+            pass
+
+        # 3) Final fallback: regex-based sentence split (no external deps)
+        import re
+        return [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()]
 except Exception:
     # NLTK not available; use a simple regex-based splitter
     import re
