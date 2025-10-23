@@ -11,7 +11,7 @@ from tqdm.asyncio import tqdm as async_tqdm
 from .prompt_manager import PromptManager
 from .data_loader import DataLoader
 from .tools.tool_executor import ToolExecutor
-from .tools import PythonTool, BingSearchTool, BingSearchToolSDS
+from .tools import PythonTool, GoogleSearchTool, GoogleSearchToolSDS
 from .vllm_client_pool import VLLMClientPool
 from .sample_processor import SampleProcessor, SampleProcessorCompletion
 from .entropy_utils import save_sample_artifacts
@@ -69,7 +69,7 @@ class AsyncInference:
             max_concurrent=self.args.python_max_concurrent,
         )
         tool_executor.register_tool(python_tool)
-        search_tool = BingSearchTool(
+        search_tool = GoogleSearchTool(
             api_key=self.args.bing_api_key,
             zone=self.args.bing_zone,
             max_results=self.args.search_max_results,
@@ -281,7 +281,7 @@ class AsyncInferenceCompletionSDS(AsyncInferenceCompletion):
             max_concurrent=self.args.python_max_concurrent,
         )
         tool_executor.register_tool(python_tool)
-        search_tool = BingSearchToolSDS(
+        search_tool = GoogleSearchToolSDS(
             api_key=self.args.bing_api_key,
             zone=self.args.bing_zone,
             max_results=self.args.search_max_results,

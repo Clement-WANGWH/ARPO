@@ -23,32 +23,20 @@ try:
     from nltk.tokenize import sent_tokenize as _nltk_sent_tokenize  # type: ignore
 
     def _safe_sent_tokenize(text: str):
-        # 1) Try the default NLTK tokenizer (works if punkt/punkt_tab is already available)
         try:
+            # Try current NLTK resource first
             return _nltk_sent_tokenize(text)
         except LookupError:
-            pass
-
-        # 2) Try loading legacy punkt models from a local nltk_data dir (no network)
-        try:
-            import nltk.data  # type: ignore
-            import os as _os
-            for local_dir in ("/root/nltk_data", _os.path.expanduser("~/nltk_data")):
-                if _os.path.isdir(local_dir) and local_dir not in nltk.data.path:
-                    nltk.data.path.insert(0, local_dir)
-            # Prefer English; fall back to universal if present
-            for res in ("tokenizers/punkt/english.pickle", "tokenizers/punkt/PY3/english.pickle"):
+            # Attempt silent downloads if network is available
+            for pkg in ("punkt_tab", "punkt"):
                 try:
-                    tokenizer = nltk.data.load(res)  # type: ignore
-                    return tokenizer.tokenize(text)
+                    nltk.download(pkg, quiet=True)
+                    return _nltk_sent_tokenize(text)
                 except Exception:
                     continue
-        except Exception:
-            pass
-
-        # 3) Final fallback: regex-based sentence split (no external deps)
-        import re
-        return [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()]
+            # Fallback to regex split
+            import re
+            return [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()]
 except Exception:
     # NLTK not available; use a simple regex-based splitter
     import re
@@ -60,7 +48,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from ..vllm_client_pool import VLLMClientPool
 from .cache_manager import BaseCacheManager
-from .search_tool import BingSearchTool
+from .search_tool import BingSearchTool, GoogleSearchTool
 
 
 headers = {
@@ -150,6 +138,8 @@ class BingSearchToolSDS(BingSearchTool):
         }
         encoded_query = urlencode(input_obj)
         return encoded_query
+
+    # Note: rely on parent _make_request (Bing) for BrightData call
 
     def get_truncated_prev_reasoning(self, reasoning_logs):
         assert len(reasoning_logs) > 0
@@ -330,6 +320,37 @@ class BingSearchToolSDS(BingSearchTool):
             document=formatted_documents,
         )
         return summary
+
+
+class GoogleSearchToolSDS(BingSearchToolSDS, GoogleSearchTool):
+    """Google Search (SDS) via BrightData using google.com SERP"""
+
+    @property
+    def name(self) -> str:
+        return "google_search"
+
+    def _pack_query(self, query):
+        if langid.classify(query)[0] == "zh":
+            hl = "zh-CN"
+        else:
+            hl = "en"
+        params = {
+            "q": query,
+            "hl": hl,
+            "num": 11,
+        }
+        return urlencode(params)
+
+    def _make_request(self, query: str, timeout: int):
+        encoded_query = self._pack_query(query)
+        target_url = f"https://www.google.com/search?{encoded_query}"
+
+        headers = {
+            "Authorization": f"Bearer {self._api_key}",
+            "Content-Type": "application/json",
+        }
+        payload = {"zone": self._zone, "url": target_url, "format": "raw"}
+        return self._call_request(query, headers, payload, timeout)
 
     async def webpage_analysis_single(self, prompt) -> str:
         in_context = self.tokenizer.apply_chat_template(

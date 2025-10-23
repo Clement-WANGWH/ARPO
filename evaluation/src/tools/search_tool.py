@@ -116,6 +116,34 @@ class BingSearchTool(BaseTool):
         result = self._call_request(query, headers, payload, timeout)
         return result
 
+
+class GoogleSearchTool(BingSearchTool):
+    """Google Search via BrightData using google.com SERP"""
+
+    @property
+    def name(self) -> str:
+        return "google_search"
+
+    def _pack_query(self, query):
+        # Map language for Google: use 'hl' instead of mkt/setLang
+        if langid.classify(query)[0] == "zh":
+            hl = "zh-CN"
+        else:
+            hl = "en"
+        params = {"q": query, "hl": hl}
+        return urlencode(params)
+
+    def _make_request(self, query: str, timeout: int):
+        encoded_query = self._pack_query(query)
+        target_url = f"https://www.google.com/search?{encoded_query}"
+
+        headers = {
+            "Authorization": f"Bearer {self._api_key}",
+            "Content-Type": "application/json",
+        }
+        payload = {"zone": self._zone, "url": target_url, "format": "raw"}
+        return self._call_request(query, headers, payload, timeout)
+
     async def postprocess_search_result(self, query, response, **kwargs) -> str:
         data = response
         if "organic" not in data:
